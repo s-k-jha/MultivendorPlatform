@@ -102,7 +102,7 @@ const getProduct = async (req, res) => {
     const { id } = req.params;
     
     const where = isNaN(id) ? { slug: id } : { id: parseInt(id) };
-
+    //test-migration-conflict-with-development
     const product = await Product.findOne({
       where,
       include: [
