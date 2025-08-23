@@ -26,7 +26,7 @@ const getCart = async (req, res) => {
         }]
       }]
     });
-    //testing: migration branch
+    //testing: prod branch
     if (!cart) {
       // Create cart if it doesn't exist
       const newCart = await Cart.create({ user_id: req.user.id });
