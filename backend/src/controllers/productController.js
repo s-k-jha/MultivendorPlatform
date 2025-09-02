@@ -123,8 +123,6 @@ const getProduct = async (req, res) => {
     
     const where = isNaN(id) ? { slug: id } : { id: parseInt(id) };
 
-<<<<<<< Updated upstream
-=======
     const cacheKey  = `Indivisual-product:${id}`;
     // const cacheKey = `products:${JSON.stringify(req.query)}`;
 
@@ -134,7 +132,6 @@ const getProduct = async (req, res) => {
       return res.json(JSON.parse(cachedProductDatawithId));
     }
     
->>>>>>> Stashed changes
     const product = await Product.findOne({
       where,
       include: [
