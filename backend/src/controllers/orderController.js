@@ -1,13 +1,20 @@
-const { Order, OrderItem, Product, ProductVariant, Address, User, Cart, CartItem } = require('../models');
+const { Order, OrderItem, Product, ProductVariant, Address, User, Cart, CartItem, ProductImage } = require('../models');
 const { Op } = require('sequelize');
 const { ORDER_STATUS } = require('../utils/constant');
 const { sequelize } = require('../models');
+const { v4: uuidv4 } = require('uuid');
+const redis = require('../utils/redis.js');
 
 
+
+
+// const generateOrderNumber = () => {
+//   const timestamp = Date.now();
+//   const random = Math.floor(1000 + Math.random() * 9000);
+//   return `ORD-${timestamp}-${random}`;
+// };
 const generateOrderNumber = () => {
-  const timestamp = Date.now();
-  const random = Math.floor(1000 + Math.random() * 9000);
-  return `ORD-${timestamp}-${random}`;
+  return `ORD-${uuidv4()}`;
 };
 
 const order_number = generateOrderNumber();
@@ -218,6 +225,15 @@ const getUserOrders = async (req, res) => {
       sort_by = 'created_at',
       sort_order = 'DESC'
     } = req.query;
+    // const cacheKey  = `User-Orders:${id}`;
+    const cacheKey = `User-Orders:${JSON.stringify(req.query)}`;
+    // First checking in cache 
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+      console.log("cache data hit ");
+      return res.json(JSON.parse(cachedData));
+    }
+
 
     const offset = (page - 1) * limit;
     const where = { buyer_id: req.user.id };
@@ -257,8 +273,8 @@ const getUserOrders = async (req, res) => {
 
     const totalPages = Math.ceil(count / limit);
 
-    res.json({
-      success: true,
+    const responsePayload = {
+       success: true,
       data: {
         orders,
         pagination: {
@@ -268,7 +284,11 @@ const getUserOrders = async (req, res) => {
           items_per_page: parseInt(limit)
         }
       }
-    });
+    };
+    await redis.setex(cacheKey,300, JSON.stringify(responsePayload));
+    return res.json(responsePayload);
+
+
   } catch (error) {
     console.error('Get user orders error:', error);
     res.status(500).json({
@@ -289,7 +309,12 @@ const getOrder = async (req, res) => {
     if (req.user.role === 'buyer') {
       where.buyer_id = req.user.id;
     }
-
+    const cacheKey = `Indivisual-user-order:${id} order id`;
+    const getOrderByid = await redis.get(cacheKey);
+    if(getOrderByid){
+      console.log('cached data for indivisual order hit');
+      return res.json(JSON.parse(getOrderByid));
+    }
     const order = await Order.findOne({
       where,
       include: [
@@ -334,11 +359,19 @@ const getOrder = async (req, res) => {
         message: 'Order not found'
       });
     }
+   
+    // res.json({
+    //   success: true,
+    //   data: { order }
+    // });
+    const responsePayload = {
+      success: true, 
+      data: {order}
+    };
+    await redis.set(cacheKey,JSON.stringify(responsePayload) );
+    return res.json(responsePayload);
 
-    res.json({
-      success: true,
-      data: { order }
-    });
+
   } catch (error) {
     console.error('Get order error:', error);
     res.status(500).json({
@@ -517,6 +550,7 @@ const cancelOrder = async (req, res) => {
 
 // Get seller's orders
 const getSellerOrders = async (req, res) => {
+  console.log('testing -> req.user.id -> to debug get seller orders', req.user);
   try {
     const {
       page = 1,

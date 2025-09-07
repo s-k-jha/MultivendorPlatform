@@ -1,8 +1,11 @@
 const { Product, ProductImage, ProductVariant, Category, User, Review } = require('../models');
-const { Op } = require('sequelize');
+const { Op, json } = require('sequelize');
 const { PRODUCT_STATUS } = require('../utils/constant');
-
+const redis = require('../utils/redis.js');
+const { Json } = require('sequelize/lib/utils');
 // Get all products with filters and pagination
+
+//at 2 places caching will be managed one at product list page for all products with filter and another is one when user click on indivisual products for details using :id
 const getProducts = async (req, res) => {
   try {
     const {
@@ -20,6 +23,15 @@ const getProducts = async (req, res) => {
 
     const offset = (page - 1) * limit;
     const where = { status };
+    console.log('req.query >>', JSON.stringify(req.query));
+    const cacheKey = `products:${JSON.stringify(req.query)}`;
+
+    // First checking in cache 
+    const cachedData = await redis.get(cacheKey);
+    if (cachedData) {
+      console.log("cache data hit ");
+      return res.json(JSON.parse(cachedData));
+    }
 
     // Apply filters
     if (category_id) {
@@ -73,7 +85,7 @@ const getProducts = async (req, res) => {
 
     const totalPages = Math.ceil(count / limit);
 
-    res.json({
+     const responsePayload = {
       success: true,
       data: {
         products,
@@ -86,7 +98,15 @@ const getProducts = async (req, res) => {
           has_prev_page: page > 1
         }
       }
-    });
+    };
+
+    // await redis.setex(cacheKey, 300, JSON.stringify(responsePayload));
+    // await redis.set(cacheKey, JSON.stringify(responsePayload));
+    await redis.setex(cacheKey,300, JSON.stringify(responsePayload));
+
+
+    return res.json(responsePayload);
+
   } catch (error) {
     console.error('Get products error:', error);
     res.status(500).json({
@@ -103,6 +123,18 @@ const getProduct = async (req, res) => {
     
     const where = isNaN(id) ? { slug: id } : { id: parseInt(id) };
 
+<<<<<<< Updated upstream
+=======
+    const cacheKey  = `Indivisual-product:${id}`;
+    // const cacheKey = `products:${JSON.stringify(req.query)}`;
+
+    const cachedProductDatawithId = await redis.get(cacheKey);
+    if(cachedProductDatawithId){
+      console.log('data would be served from redis server');
+      return res.json(JSON.parse(cachedProductDatawithId));
+    }
+    
+>>>>>>> Stashed changes
     const product = await Product.findOne({
       where,
       include: [
@@ -149,11 +181,18 @@ const getProduct = async (req, res) => {
         message: 'Product not found'
       });
     }
+    const payloadData = {
+      success:true,
+      data: { product}
+    };
+    // res.json({
+    //   success: true,
+    //   data: { product }
+    // });
+    await redis.set(cacheKey , JSON.stringify(payloadData));
+    return res.json(payloadData);
 
-    res.json({
-      success: true,
-      data: { product }
-    });
+
   } catch (error) {
     console.error('Get product error:', error);
     res.status(500).json({
@@ -238,6 +277,14 @@ const updateProduct = async (req, res) => {
         { model: Category, as: 'category' }
       ]
     });
+     // Update cache for this product
+    const productCacheKey = `Indivisual-product:${updatedProduct.id}`;
+    await redis.set(productCacheKey, JSON.stringify(updatedProduct), 'EX', 3600);
+
+    // Delete product list caches (so they rebuild on next fetch)
+    // const categoryCacheKey = `products:category:${updatedProduct.category_id}`;
+    const deletecachekey = `products:${JSON.stringify(req.query)}`;
+    await redis.del(deletecachekey);
 
     res.json({
       success: true,
@@ -275,6 +322,9 @@ const deleteProduct = async (req, res) => {
     }
 
     await product.destroy();
+    const delete_Product_from_redis = `products:${id}`;
+    //delete product list (in future saved in product:{filter manner})
+    await redis.del(delete_Product_from_redis);
 
     res.json({
       success: true,
