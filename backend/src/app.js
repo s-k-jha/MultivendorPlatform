@@ -58,7 +58,6 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/categories', categoryRoutes);
-
 // Health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({
