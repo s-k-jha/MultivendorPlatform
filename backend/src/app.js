@@ -41,8 +41,6 @@ app.use('/api', limiter);
 
 
 
-*/
-
 // General middleware
 app.use(compression());
 app.use(morgan('combined'));
