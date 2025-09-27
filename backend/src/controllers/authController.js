@@ -2,6 +2,10 @@ const bcrypt = require('bcryptjs');
 const { User, Cart } = require('../models');
 const { generateToken } = require('../config/jwt');
 const {USER_ROLES} = require('../utils/constant')
+const nodemailer = require("nodemailer");
+
+
+let otpStore = {}; 
 
 // Register new user
 const register = async (req, res) => {
@@ -240,6 +244,83 @@ const refreshToken = async (req, res) => {
     });
   }
 };
+// Send OTP
+const sendOtp = async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    // Generate OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    otpStore[email] = { otp, expires: Date.now() + 5 * 60 * 1000 }; // 5 mins
+
+    // Send OTP via email
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.SMTP_EMAIL,  // your gmail
+        pass: process.env.SMTP_PASS,   // app password
+      },
+    });
+
+    await transporter.sendMail({
+      from: process.env.SMTP_EMAIL,
+      to: email,
+      subject: "Your OTP Code",
+      text: `Your OTP is ${otp}. It expires in 5 minutes.`,
+    });
+
+    res.json({ success: true, message: "OTP sent successfully" });
+  } catch (error) {
+    console.error("Send OTP error:", error);
+    res.status(500).json({ success: false, message: "Failed to send OTP" });
+  }
+};
+
+// Verify OTP (Signup/Login)
+const verifyOtp = async (req, res) => {
+  try {
+    const { email, otp, role = USER_ROLES.BUYER,first_name='guest', last_name='account',password='StrongPassword@123' } = req.body;
+    console.log({
+      email, first_name, last_name, role, password, otp
+    })
+    const record = otpStore[email];
+    if (!record || record.otp !==  String(otp) || Date.now() > record.expires) {
+      return res.status(400).json({ success: false, message: "Invalid or expired OTP" });
+    }
+
+    // Check if user exists
+    let user = await User.findOne({ where: { email } });
+    console.log('user', user);
+
+    // If not, create new user
+    if (!user) {
+      console.log('user not found in db');
+      user = await User.create({ email, is_active: 1, first_name, last_name, password });
+      if (role === USER_ROLES.BUYER) {
+        await Cart.create({ user_id: user.id });
+      }
+    }
+
+    // Clear OTP after use
+    delete otpStore[email];
+
+    // Generate token
+    const token = generateToken({ id: user.id, role: user.role });
+
+    res.json({
+      success: true,
+      message: user ? "Login successful" : "Signup successful",
+      data: { user: user.toJSON(), token },
+    });
+  } catch (error) {
+    console.error("Verify OTP error:", error);
+    res.status(500).json({ success: false, message: "Failed to verify OTP" });
+  }
+};
 
 module.exports = {
   register,
@@ -247,5 +328,7 @@ module.exports = {
   getProfile,
   updateProfile,
   changePassword,
-  refreshToken
+  refreshToken,
+  sendOtp,
+  verifyOtp
 };

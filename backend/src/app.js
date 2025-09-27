@@ -27,12 +27,21 @@ app.use(cors({
 }));
 /***
 // Rate limiting
+
+
+/** 
+ * 
+ 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100 // limit each IP to 100 requests per windowMs
 });
 app.use('/api', limiter);
 **/
+
+
+
+*/
 
 // General middleware
 app.use(compression());
@@ -50,7 +59,6 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/categories', categoryRoutes);
-
 // Health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({
