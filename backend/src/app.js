@@ -20,11 +20,26 @@ const categoryRoutes = require('../src/routes/categories');
 const app = express();
 
 // Security middleware
-app.use(helmet());
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com',
-  credentials: true
-}));
+// app.use(helmet());
+// app.use(cors({
+//   origin: process.env.CLIENT_URL || 'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com',
+//   credentials: true
+// }));
+const whitelist = [
+  'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com', //  deployed frontend (on deepnote host cloud)
+  'http://localhost:3000' // development frontend 
+];
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (whitelist.indexOf(origin) !== -1 || !origin) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  optionsSuccessStatus: 200
+};
 
 
 // Rate limiting
