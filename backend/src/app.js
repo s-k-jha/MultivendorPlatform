@@ -44,7 +44,7 @@ const app = express();
 app.use(cors({
   origin: [
     process.env.CLIENT_URL || 'http://localhost:3000',
-    'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com'
+    // 'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com'
   ],
   credentials: true
 }));
