@@ -6,6 +6,14 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');  //gradedown express version for using this 
 const path = require('path');
 
+app.use(cors({
+  origin: [
+    process.env.CLIENT_URL || 'http://localhost:3000',
+    'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com'
+  ],
+  credentials: true
+}));
+
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
 
@@ -41,13 +49,7 @@ const app = express();
 //   },
 //   optionsSuccessStatus: 200
 // };
-app.use(cors({
-  origin: [
-    process.env.CLIENT_URL || 'http://localhost:3000',
-    // 'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com'
-  ],
-  credentials: true
-}));
+
 
 
 
