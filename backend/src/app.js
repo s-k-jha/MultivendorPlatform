@@ -26,6 +26,7 @@ app.use(cors({
   credentials: true
 }));
 
+
 // Rate limiting
 
 
@@ -35,6 +36,7 @@ app.use(cors({
 //   max: 100
 // });
 // app.use('/api', limiter);
+
 
 
 
