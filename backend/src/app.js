@@ -5,6 +5,8 @@ const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');  //gradedown express version for using this 
 const path = require('path');
+const app = express();
+
 
 app.use(helmet());
 app.use(cors({
@@ -26,7 +28,6 @@ const cartRoutes = require('../src/routes/cart');
 const addressRoutes = require('../src/routes/addresses');
 const categoryRoutes = require('../src/routes/categories');
 
-const app = express();
 
 // Security middleware
 
