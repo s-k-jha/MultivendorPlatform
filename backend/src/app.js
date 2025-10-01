@@ -20,6 +20,7 @@ const categoryRoutes = require('../src/routes/categories');
 const app = express();
 
 // Security middleware
+
 // app.use(helmet());
 // app.use(cors({
 //   origin: process.env.CLIENT_URL || 'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com',
@@ -40,6 +41,7 @@ const corsOptions = {
   },
   optionsSuccessStatus: 200
 };
+
 
 
 // Rate limiting
