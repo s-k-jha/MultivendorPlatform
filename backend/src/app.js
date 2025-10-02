@@ -12,7 +12,8 @@ app.use(helmet());
 app.use(cors({
   origin: [
     process.env.CLIENT_URL || 'http://localhost:3000',
-    'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com'
+    'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com',
+    'http://192.168.56.1:3000'
   ],
   credentials: true
 }));
