@@ -3,37 +3,39 @@ const path = require('path');
 const fs = require('fs');
 
 // Ensure upload directories exist
-const ensureDirectoryExists = (dirPath) => {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-};
+// const ensureDirectoryExists = (dirPath) => {
+//   if (!fs.existsSync(dirPath)) {
+//     fs.mkdirSync(dirPath, { recursive: true });
+//   }
+// };
+
+const memoryStorage = multer.memoryStorage();
 
 // Storage configuration for product images
-const productStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../../uploads/products');
-    ensureDirectoryExists(uploadPath);
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
-  }
-});
+// const productStorage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     const uploadPath = path.join(__dirname, '../../uploads/products');
+//     ensureDirectoryExists(uploadPath);
+//     cb(null, uploadPath);
+//   },
+//   filename: (req, file, cb) => {
+//     const uniqueName = `product-${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
+//     cb(null, uniqueName);
+//   }
+// });
 
 // Storage configuration for user profile images
-const profileStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(__dirname, '../../uploads/profiles');
-    ensureDirectoryExists(uploadPath);
-    cb(null, uploadPath);
-  },
-  filename: (req, file, cb) => {
-    const uniqueName = `profile-${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
-    cb(null, uniqueName);
-  }
-});
+// const profileStorage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     const uploadPath = path.join(__dirname, '../../uploads/profiles');
+//     ensureDirectoryExists(uploadPath);
+//     cb(null, uploadPath);
+//   },
+//   filename: (req, file, cb) => {
+//     const uniqueName = `profile-${Date.now()}-${Math.round(Math.random() * 1E9)}${path.extname(file.originalname)}`;
+//     cb(null, uniqueName);
+//   }
+// });
 
 // File filter for images
 const imageFilter = (req, file, cb) => {
@@ -48,20 +50,20 @@ const imageFilter = (req, file, cb) => {
 
 // Upload configurations
 const uploadProduct = multer({
-  storage: productStorage,
+  storage: memoryStorage,
   fileFilter: imageFilter,
   limits: {
     fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024, // 5MB
-    files: 10 // Maximum 10 files
+    // files: 10 
   }
 });
 
 const uploadProfile = multer({
-  storage: profileStorage,
+  storage: memoryStorage,
   fileFilter: imageFilter,
   limits: {
     fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024, // 5MB
-    files: 1 // Single file
+    // files: 1
   }
 });
 

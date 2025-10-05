@@ -1,8 +1,13 @@
 const { Product, ProductImage, ProductVariant, Category, User, Review } = require('../models');
+const cloudinary = require('../utils/cloudinary.js'); 
+const streamifier = require('streamifier');
 const { Op, json } = require('sequelize');
 const { PRODUCT_STATUS } = require('../utils/constant');
 const redis = require('../utils/redis.js');
 const { Json } = require('sequelize/lib/utils');
+const db = require('../models'); 
+const { QueryTypes } = require('sequelize'); 
+
 // Get all products with filters and pagination
 
 //at 2 places caching will be managed one at product list page for all products with filter and another is one when user click on indivisual products for details using :id
@@ -85,7 +90,7 @@ const getProducts = async (req, res) => {
 
     const totalPages = Math.ceil(count / limit);
 
-     const responsePayload = {
+    const responsePayload = {
       success: true,
       data: {
         products,
@@ -102,7 +107,7 @@ const getProducts = async (req, res) => {
 
     // await redis.setex(cacheKey, 300, JSON.stringify(responsePayload));
     // await redis.set(cacheKey, JSON.stringify(responsePayload));
-    await redis.setex(cacheKey,300, JSON.stringify(responsePayload));
+    await redis.setex(cacheKey, 300, JSON.stringify(responsePayload));
 
 
     return res.json(responsePayload);
@@ -120,18 +125,18 @@ const getProducts = async (req, res) => {
 const getProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const where = isNaN(id) ? { slug: id } : { id: parseInt(id) };
 
-    const cacheKey  = `Indivisual-product:${id}`;
+    const cacheKey = `Indivisual-product:${id}`;
     // const cacheKey = `products:${JSON.stringify(req.query)}`;
 
     const cachedProductDatawithId = await redis.get(cacheKey);
-    if(cachedProductDatawithId){
+    if (cachedProductDatawithId) {
       console.log('data would be served from redis server');
       return res.json(JSON.parse(cachedProductDatawithId));
     }
-    
+
     const product = await Product.findOne({
       where,
       include: [
@@ -179,14 +184,14 @@ const getProduct = async (req, res) => {
       });
     }
     const payloadData = {
-      success:true,
-      data: { product}
+      success: true,
+      data: { product }
     };
     // res.json({
     //   success: true,
     //   data: { product }
     // });
-    await redis.set(cacheKey , JSON.stringify(payloadData));
+    await redis.set(cacheKey, JSON.stringify(payloadData));
     return res.json(payloadData);
 
 
@@ -210,17 +215,49 @@ const createProduct = async (req, res) => {
     const product = await Product.create(productData);
 
     // Handle image uploads
+    // if (req.files && req.files.length > 0) {
+    //   const imagePromises = req.files.map((file, index) =>
+    //     ProductImage.create({
+    //       product_id: product.id,
+    //       image_url: `/uploads/products/${file.filename}`,
+    //       is_primary: index === 0,
+    //       sort_order: index
+    //     })
+    //   );
+    //   await Promise.all(imagePromises);
+    // }
     if (req.files && req.files.length > 0) {
-      const imagePromises = req.files.map((file, index) =>
-        ProductImage.create({
-          product_id: product.id,
-          image_url: `/uploads/products/${file.filename}`,
-          is_primary: index === 0,
-          sort_order: index
-        })
-      );
-      await Promise.all(imagePromises);
+      const uploadPromises = req.files.map((file, index) => {
+        return new Promise((resolve, reject) => {
+          const uploadStream = cloudinary.uploader.upload_stream(
+            {
+              folder: `uploads/products/${product.id}`, 
+              public_id: `${product.id}-${Date.now()}-${index}`,
+              resource_type: "auto"
+            },
+            (error, result) => {
+              if (error) {
+                console.error(`Cloudinary upload error for file ${index}:`, error);
+                return reject(error);
+              }
+              resolve({
+                product_id: product.id,
+                image_url: result.secure_url,
+                public_id: result.public_id, 
+                is_primary: index === 0,
+                sort_order: index
+              });
+            }
+          );
+          streamifier.createReadStream(file.buffer).pipe(uploadStream);
+        });
+      });
+
+      const productImageData = await Promise.all(uploadPromises);
+
+      await ProductImage.bulkCreate(productImageData);
     }
+
 
     // Fetch product with associations
     const createdProduct = await Product.findByPk(product.id, {
@@ -249,7 +286,7 @@ const createProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const product = await Product.findByPk(id);
     if (!product) {
       return res.status(404).json({
@@ -274,7 +311,7 @@ const updateProduct = async (req, res) => {
         { model: Category, as: 'category' }
       ]
     });
-     // Update cache for this product
+    // Update cache for this product
     const productCacheKey = `Indivisual-product:${updatedProduct.id}`;
     await redis.set(productCacheKey, JSON.stringify(updatedProduct), 'EX', 3600);
 
@@ -301,7 +338,7 @@ const updateProduct = async (req, res) => {
 const deleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     const product = await Product.findByPk(id);
     if (!product) {
       return res.status(404).json({
@@ -327,7 +364,7 @@ const deleteProduct = async (req, res) => {
       success: true,
       message: 'Product deleted successfully'
     });
-  }catch (error) {
+  } catch (error) {
     console.error('delete product error:', error);
     res.status(500).json({
       success: false,
