@@ -5,19 +5,6 @@ const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');  //gradedown express version for using this 
 const path = require('path');
-const app = express();
-
-
-app.use(helmet());
-app.use(cors({
-  origin: [
-    process.env.CLIENT_URL || 'http://localhost:3000',
-    'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com',
-    'http://192.168.56.1:3000',
-    'http://192.168.0.20:3000/'
-  ],
-  credentials: true
-}));
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
@@ -30,9 +17,11 @@ const cartRoutes = require('../src/routes/cart');
 const addressRoutes = require('../src/routes/addresses');
 const categoryRoutes = require('../src/routes/categories');
 
+const app = express();
 
 // Security middleware
 
+// app.use(helmet());
 // app.use(cors({
 //   origin: process.env.CLIENT_URL || 'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com',
 //   credentials: true
@@ -52,8 +41,15 @@ const categoryRoutes = require('../src/routes/categories');
 //   },
 //   optionsSuccessStatus: 200
 // };
+// app.use(cors({
+//   origin: [
+//     process.env.CLIENT_URL || 'http://localhost:3000',
+//     // 'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com'
+//   ],
+//   credentials: true
+// }));
 
-
+app.use(cors());
 
 
 
