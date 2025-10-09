@@ -66,6 +66,13 @@ const uploadProfile = multer({
     // files: 1
   }
 });
+const uploadCarousel = multer({
+  storage: memoryStorage,
+  fileFilter: imageFilter,
+  limits: {
+    fileSize: parseInt(process.env.MAX_FILE_SIZE) || 5 * 1024 * 1024, // 5MB
+  }
+});
 
 // Error handling middleware for multer
 const handleUploadError = (err, req, res, next) => {
@@ -104,5 +111,6 @@ module.exports = {
   uploadProduct: uploadProduct.array('images', 10),
   uploadSingleProduct: uploadProduct.single('image'),
   uploadProfile: uploadProfile.single('profile_image'),
+  uploadCarousel: uploadCarousel.single('carousel_image'),
   handleUploadError
 };
