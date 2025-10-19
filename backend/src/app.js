@@ -17,7 +17,7 @@ const cartRoutes = require('../src/routes/cart');
 const addressRoutes = require('../src/routes/addresses');
 const categoryRoutes = require('../src/routes/categories');
 const carouselRoutes = require('../src/routes/carouselRoutes');
-
+const themeRoutes = require('../src/routes/themes')
 const app = express();
 
 // Security middleware
@@ -84,6 +84,7 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/carousels', carouselRoutes);
+app.use('/api/themes', themeRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({

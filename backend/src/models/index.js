@@ -12,6 +12,7 @@ const Cart = require('./Cart');
 const CartItem = require('./CartItem');
 const Review = require('./Review');
 const Address = require('./Address');
+const Theme = require('./Theme');
 const CarouselImage = require('./CarouselImage')(sequelize, DataTypes);
 
 // Define associations
@@ -85,6 +86,7 @@ module.exports = {
   CartItem,
   Review,
   Address,
-  CarouselImage
+  CarouselImage,
+  Theme   
 
 };
