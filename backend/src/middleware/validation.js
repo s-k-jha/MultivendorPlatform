@@ -30,7 +30,7 @@ const userValidation = {
     
     body('last_name')
       .trim()
-      .isLength({ min: 2, max: 50 })
+      .isLength({max: 50 })
       .withMessage('Last name must be between 2 and 50 characters'),
     
     body('email')
