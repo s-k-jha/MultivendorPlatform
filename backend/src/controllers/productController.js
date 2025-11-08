@@ -1,4 +1,6 @@
 const { Product, ProductImage, ProductVariant, Category, User, Review } = require('../models');
+const { sequelize } = require('../models');
+
 const cloudinary = require('../utils/cloudinary.js'); 
 const streamifier = require('streamifier');
 const { Op, json } = require('sequelize');
@@ -444,11 +446,90 @@ const getSellerProducts = async (req, res) => {
   }
 };
 
+const fetchFreeAlgoTableData = async () => {
+  try {
+    //table :- free_algo_Config
+    const [configRow] = await db.sequelize.query(
+      "SELECT priority, percentage FROM free_algo_config WHERE id = 1 LIMIT 1",
+      { type: QueryTypes.SELECT }
+    );
+
+    if (!configRow) {
+      console.log("Free Algo configuration not found in DB. Using code defaults.");
+    }
+
+    return configRow;
+
+  } catch (error) {
+    console.error('Error fetching Free Algo configuration from DB:', error);
+
+  }
+};
+
+const getSellers = async (req, res) => {
+  try {
+    const {
+      page = 1,
+      limit = 10,
+      sort_by = 'created_at',
+      sort_order = 'DESC'
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+    // const sellerId = req.user.dataValues.id; 
+
+    // let whereClause = `WHERE p.seller_id = ${sellerId}`;
+  
+
+    const query = `SELECT 
+    id, first_name, last_name, email, phone,role, is_active, email_verified, profile_image, gender, company_name, date_of_birth,company_description, tax_id, seller_verified, last_login, created_at, updated_at FROM 
+    users where role = 'seller' 
+           ORDER BY ${sort_by} ${sort_order}
+      LIMIT ${limit} OFFSET ${offset};
+    `;
+
+    // const orders = await sequelize.query(query, { type: QueryTypes.SELECT });
+    const sellers = await sequelize.query(
+        query, 
+        {type: QueryTypes.SELECT}
+    ); 
+
+    const countQuery = `
+      SELECT COUNT(*) AS total
+      FROM users
+      where role = 'seller';
+    `;
+    const totalResult = await sequelize.query(countQuery, { type: QueryTypes.SELECT });
+    const totalItems = totalResult[0]?.total || 0;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return res.json({
+      success: true,
+      data: {
+        sellers,
+        pagination: {
+          current_page: parseInt(page),
+          total_pages: totalPages,
+          total_items: totalItems,
+          items_per_page: parseInt(limit),
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Get sellers error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch sellers',
+    });
+  }
+};
+
 module.exports = {
   getProducts,
   getProduct,
   createProduct,
   updateProduct,
   deleteProduct,
-  getSellerProducts
+  getSellerProducts,
+  getSellers
 };
