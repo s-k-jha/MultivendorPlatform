@@ -7,7 +7,7 @@ const getAllThemes = async (req, res) => {
   try {
     const themes = await Theme.findAll({
       order: [['createdAt', 'DESC']],
-      where: { is_active: 1}
+      // where: { is_active: 1}
     });
 
     return res.status(200).json({
@@ -19,6 +19,7 @@ const getAllThemes = async (req, res) => {
         image_url: theme.image_url || null,
         createdAt: theme.createdAt,
         updatedAt: theme.updatedAt,
+        is_active: theme.is_active
       })),
     });
   } catch (error) {
