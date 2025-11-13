@@ -11,7 +11,7 @@ const getCategories = async (req, res) => {
     const includeOptions = include_products === 'true' ? [{
       model: Product,
       as: 'products',
-      where: { status: 'active' },
+      // where: { status: 'active' },
       required: false,
       attributes: ['id', 'name', 'price', 'average_rating'],
       limit: 5
