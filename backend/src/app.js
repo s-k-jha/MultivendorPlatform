@@ -18,6 +18,11 @@ const addressRoutes = require('../src/routes/addresses');
 const categoryRoutes = require('../src/routes/categories');
 const carouselRoutes = require('../src/routes/carouselRoutes');
 const themeRoutes = require('../src/routes/themes')
+const sellerRoutes = require('../src/routes/seller')
+const leadsRoutes = require('../src/routes/leads');
+const adminRoutes = require('./routes/admin');
+
+
 const app = express();
 
 // Security middleware
@@ -85,6 +90,11 @@ app.use('/api/addresses', addressRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/carousels', carouselRoutes);
 app.use('/api/themes', themeRoutes);
+app.use('/api/seller', sellerRoutes);
+app.use('/api/leads', leadsRoutes);
+app.use('/api/admin', adminRoutes);
+
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({
