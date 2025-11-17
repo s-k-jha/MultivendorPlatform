@@ -24,7 +24,7 @@ const Leads = sequelize.define('Leads', {
     defaultValue: 1
   }
 }, {
-  tableName: 'Leads'
+  tableName: 'leads'
 });
 
 module.exports = Leads;
