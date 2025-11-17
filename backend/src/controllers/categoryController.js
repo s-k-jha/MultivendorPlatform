@@ -18,7 +18,7 @@ const getCategories = async (req, res) => {
     }] : [];
 
     const categories = await Category.findAll({
-      where: { is_active: true },
+      // where: { is_active: true },
       include: includeOptions,
       order: [['sort_order', 'ASC'], ['name', 'ASC']]
     });
