@@ -13,7 +13,7 @@ const CartItem = require('./CartItem');
 const Review = require('./Review');
 const Address = require('./Address');
 const Theme = require('./Theme');
-const Leads = require('./leads');
+const Leads = require('./Leads');
 const CarouselImage = require('./CarouselImage')(sequelize, DataTypes);
 
 // Define associations
