@@ -4,6 +4,7 @@ const { ORDER_STATUS } = require('../utils/constant');
 const { sequelize } = require('../models');
 const { v4: uuidv4 } = require('uuid');
 const redis = require('../utils/redis.js');
+const { QueryTypes } = require('sequelize');
 
 
 
@@ -549,8 +550,80 @@ const cancelOrder = async (req, res) => {
 };
 
 // Get seller's orders
+// const getSellerOrders = async (req, res) => {
+//   console.log('testing -> req.user.id -> to debug get seller orders', req.user);
+//   try {
+//     const {
+//       page = 1,
+//       limit = 10,
+//       status,
+//       sort_by = 'created_at',
+//       sort_order = 'DESC'
+//     } = req.query;
+
+//     const offset = (page - 1) * limit;
+
+//     // Get orders containing seller's products
+//     const { count, rows: orders } = await Order.findAndCountAll({
+//       where: status ? { status } : {},
+//       include: [{
+//         model: OrderItem,
+//         as: 'items',
+//         require: true,
+//         include: [{
+
+//           model: Product,
+//           as: 'product',
+//           required: true,
+//           where: { seller_id: req.user.id },
+//           attributes: ['id', 'name', 'brand', 'seller_id'],
+//           include: [{
+//             model: ProductImage,
+//             as: 'images',
+//             where: { is_primary: true },
+//             required: false,
+//             limit: 1
+//           }]
+//         }],
+//         required: true
+//       }, {
+//         model: User,
+//         as: 'buyer',
+//         attributes: ['id', 'first_name', 'last_name', 'email']
+//       }, {
+//         model: Address,
+//         as: 'shippingAddress'
+//       }],
+//       where: status ? { status } : {},
+//       order: [[sort_by, sort_order.toUpperCase()]],
+//       limit: parseInt(limit),
+//       offset: parseInt(offset),
+//       distinct: true
+//     });
+
+//     const totalPages = Math.ceil(count / limit);
+
+//     res.json({
+//       success: true,
+//       data: {
+//         orders,
+//         pagination: {
+//           current_page: parseInt(page),
+//           total_pages: totalPages,
+//           total_items: count,
+//           items_per_page: parseInt(limit)
+//         }
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Get seller orders error:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Failed to fetch orders'
+//     });
+//   }
+// };
 const getSellerOrders = async (req, res) => {
-  console.log('testing -> req.user.id -> to debug get seller orders', req.user);
   try {
     const {
       page = 1,
@@ -561,60 +634,77 @@ const getSellerOrders = async (req, res) => {
     } = req.query;
 
     const offset = (page - 1) * limit;
+    const sellerId = req.user.dataValues.id; 
 
-    // Get orders containing seller's products
-    const { count, rows: orders } = await Order.findAndCountAll({
-      include: [{
-        model: OrderItem,
-        as: 'items',
-        include: [{
-          model: Product,
-          as: 'product',
-          where: { seller_id: req.user.id },
-          attributes: ['id', 'name', 'brand', 'seller_id'],
-          include: [{
-            model: ProductImage,
-            as: 'images',
-            where: { is_primary: true },
-            required: false,
-            limit: 1
-          }]
-        }],
-        required: true
-      }, {
-        model: User,
-        as: 'buyer',
-        attributes: ['id', 'first_name', 'last_name', 'email']
-      }, {
-        model: Address,
-        as: 'shippingAddress'
-      }],
-      where: status ? { status } : {},
-      order: [[sort_by, sort_order.toUpperCase()]],
-      limit: parseInt(limit),
-      offset: parseInt(offset),
-      distinct: true
-    });
+    let whereClause = `WHERE p.seller_id = ${sellerId}`;
+    if (status) {
+      whereClause += ` AND o.status = '${status}'`;
+    }
 
-    const totalPages = Math.ceil(count / limit);
+    const query = `
+      SELECT 
+        o.id AS order_id,
+        o.order_number,
+        o.status,
+        o.total_amount,
+        o.created_at AS order_date,
+        u.first_name AS buyer_first_name,
+        u.last_name AS buyer_last_name,
+        u.email AS buyer_email,
+        a.address_line_1,
+        a.city,
+        a.state,
+        a.postal_code,
+        a.country,
+        p.id AS product_id,
+        p.name AS product_name,
+        p.brand AS product_brand,
+        p.seller_id,
+        oi.quantity,
+        oi.unit_price,
+        oi.total_price,
+        pi.image_url AS product_image
+      FROM orders o
+      INNER JOIN order_items oi ON o.id = oi.order_id
+      INNER JOIN products p ON oi.product_id = p.id
+      LEFT JOIN product_images pi ON pi.product_id = p.id AND pi.is_primary = 1
+      LEFT JOIN users u ON o.buyer_id = u.id
+      LEFT JOIN addresses a ON o.shipping_address_id = a.id
+      ${whereClause}
+      ORDER BY o.${sort_by} ${sort_order}
+      LIMIT ${limit} OFFSET ${offset};
+    `;
 
-    res.json({
+    const orders = await sequelize.query(query, { type: QueryTypes.SELECT });
+
+    const countQuery = `
+      SELECT COUNT(DISTINCT o.id) AS total
+      FROM orders o
+      INNER JOIN order_items oi ON o.id = oi.order_id
+      INNER JOIN products p ON oi.product_id = p.id
+      ${whereClause};
+    `;
+    const totalResult = await sequelize.query(countQuery, { type: QueryTypes.SELECT });
+    const totalItems = totalResult[0]?.total || 0;
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return res.json({
       success: true,
       data: {
         orders,
         pagination: {
           current_page: parseInt(page),
           total_pages: totalPages,
-          total_items: count,
-          items_per_page: parseInt(limit)
-        }
-      }
+          total_items: totalItems,
+          items_per_page: parseInt(limit),
+        },
+      },
     });
   } catch (error) {
     console.error('Get seller orders error:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Failed to fetch orders'
+      message: 'Failed to fetch orders',
     });
   }
 };

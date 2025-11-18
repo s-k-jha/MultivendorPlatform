@@ -1,4 +1,6 @@
 const sequelize = require('../config/database');
+const { DataTypes } = require('sequelize');
+
 const User = require('./User');
 const Product = require('./Product');
 const ProductImage = require('./ProductImage');
@@ -10,6 +12,9 @@ const Cart = require('./Cart');
 const CartItem = require('./CartItem');
 const Review = require('./Review');
 const Address = require('./Address');
+const Theme = require('./Theme');
+const Leads = require('./Leads');
+const CarouselImage = require('./CarouselImage')(sequelize, DataTypes);
 
 // Define associations
 const defineAssociations = () => {
@@ -81,5 +86,9 @@ module.exports = {
   Cart,
   CartItem,
   Review,
-  Address
+  Address,
+  CarouselImage,
+  Theme,
+  Leads
+
 };

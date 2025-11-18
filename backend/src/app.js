@@ -16,6 +16,12 @@ const orderRoutes = require('../src/routes/orders');
 const cartRoutes = require('../src/routes/cart');
 const addressRoutes = require('../src/routes/addresses');
 const categoryRoutes = require('../src/routes/categories');
+const carouselRoutes = require('../src/routes/carouselRoutes');
+const themeRoutes = require('../src/routes/themes')
+const sellerRoutes = require('../src/routes/seller')
+const leadsRoutes = require('../src/routes/leads');
+const adminRoutes = require('./routes/admin');
+
 
 const app = express();
 
@@ -26,21 +32,30 @@ const app = express();
 //   origin: process.env.CLIENT_URL || 'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com',
 //   credentials: true
 // }));
-const whitelist = [
-  'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com', //  deployed frontend (on deepnote host cloud)
-  'http://localhost:3000' // development frontend 
-];
+// const whitelist = [
+//   'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com', //  deployed frontend (on deepnote host cloud)
+//   'http://localhost:3000' // development frontend 
+// ];
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (whitelist.indexOf(origin) !== -1 || !origin) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  optionsSuccessStatus: 200
-};
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     if (whitelist.indexOf(origin) !== -1 || !origin) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   optionsSuccessStatus: 200
+// };
+// app.use(cors({
+//   origin: [
+//     process.env.CLIENT_URL || 'http://localhost:3000',
+//     // 'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com'
+//   ],
+//   credentials: true
+// }));
+
+app.use(cors());
 
 
 
@@ -73,6 +88,13 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/carousels', carouselRoutes);
+app.use('/api/themes', themeRoutes);
+app.use('/api/seller', sellerRoutes);
+app.use('/api/leads', leadsRoutes);
+app.use('/api/admin', adminRoutes);
+
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({
