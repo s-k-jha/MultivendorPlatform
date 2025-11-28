@@ -6,8 +6,11 @@ const { productValidation, generalValidation } = require('../middleware/validati
 const { uploadProduct, handleUploadError } = require('../middleware/upload');
 
 // Public routes
+router.get('/getAllSellers', productController.getSellers);
+
 router.get('/', optionalAuth, generalValidation.pagination, productController.getProducts);
 router.get('/:id', optionalAuth, productController.getProduct);
+
 
 // Protected routes
 router.use(authenticate);
