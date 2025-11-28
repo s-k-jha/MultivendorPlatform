@@ -103,7 +103,58 @@ const getUserReturnRequests = async (req, res) => {
     }
 };
 
+// Update Return Request Status (Admin/Seller only ideally)
+const updateReturnStatus = async (req, res) => {
+    try {
+        const { id } = req.params; // Return Request ID
+        const { status, admin_comment } = req.body;
+
+        // 1. Validate Status
+        const validStatuses = ['pending', 'approved', 'rejected', 'completed'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({ success: false, message: 'Invalid status value' });
+        }
+
+        // 2. Find the Return Request
+        const returnRequest = await ReturnRequest.findByPk(id);
+
+        if (!returnRequest) {
+            return res.status(404).json({ success: false, message: 'Return request not found' });
+        }
+
+        // 3. Authorization Check (Optional but recommended)
+        // You might want to check if req.user.role === 'admin' or 'seller' here
+        // if (req.user.role !== 'admin') { ... }
+
+        // 4. Update the Status
+        returnRequest.status = status;
+        
+        // (Optional) If you have a comment field for admins/sellers
+        // if (admin_comment) returnRequest.admin_comment = admin_comment;
+
+        await returnRequest.save();
+
+        // 5. Handle Business Logic based on status
+        if (status === 'approved') {
+            // TODO: Send email to user with shipping label
+        } else if (status === 'completed') {
+            // TODO: Trigger Refund Logic (Stripe/Wallet/etc)
+        }
+
+        res.json({
+            success: true,
+            message: `Return request marked as ${status}`,
+            data: returnRequest
+        });
+
+    } catch (error) {
+        console.error('Update return status error:', error);
+        res.status(500).json({ success: false, message: 'Failed to update return status' });
+    }
+};
+
 module.exports = {
     createReturnRequest,
-    getUserReturnRequests
+    getUserReturnRequests,
+    updateReturnStatus
 };

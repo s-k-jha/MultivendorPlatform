@@ -17,5 +17,6 @@ router.post(
 
 // GET /api/returns - Get all return requests for the logged-in user
 router.get('/', requireBuyer, returnController.getUserReturnRequests);
+router.put('/:id', requireSeller, returnController.updateReturnStatus);
 
 module.exports = router;
