@@ -16,6 +16,7 @@ const Theme = require('./Theme');
 const Leads = require('./Leads');
 const CarouselImage = require('./CarouselImage')(sequelize, DataTypes);
 const ReturnRequest = require('./ReturnRequest'); 
+const UserFootprint = require('./UserFootprint')(sequelize, DataTypes);
 
 
 // Define associations
@@ -101,6 +102,7 @@ module.exports = {
   CarouselImage,
   Theme,
   Leads,
-  ReturnRequest
+  ReturnRequest,
+  UserFootprint
 
 };
