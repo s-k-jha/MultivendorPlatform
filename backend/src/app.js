@@ -21,6 +21,7 @@ const themeRoutes = require('../src/routes/themes')
 const sellerRoutes = require('../src/routes/seller')
 const leadsRoutes = require('../src/routes/leads');
 const adminRoutes = require('./routes/admin');
+const returnRoutes = require('./routes/returnRoutes');
 
 
 const app = express();
@@ -93,6 +94,7 @@ app.use('/api/themes', themeRoutes);
 app.use('/api/seller', sellerRoutes);
 app.use('/api/leads', leadsRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/returns', returnRoutes);
 
 
 // Health check

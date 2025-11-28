@@ -15,6 +15,8 @@ const Address = require('./Address');
 const Theme = require('./Theme');
 const Leads = require('./Leads');
 const CarouselImage = require('./CarouselImage')(sequelize, DataTypes);
+const ReturnRequest = require('./ReturnRequest'); 
+
 
 // Define associations
 const defineAssociations = () => {
@@ -69,6 +71,15 @@ const defineAssociations = () => {
   // Address associations
   Address.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
   Address.hasMany(Order, { foreignKey: 'shipping_address_id', as: 'orders' });
+
+  // ReturnRequest associations
+  ReturnRequest.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+  ReturnRequest.belongsTo(Order, { foreignKey: 'order_id', as: 'order' });
+  ReturnRequest.belongsTo(Product, { foreignKey: 'product_id', as: 'product' });
+
+  // Optional: Inverse associations (if want to access returns from the User/Order side)
+  User.hasMany(ReturnRequest, { foreignKey: 'user_id', as: 'returnRequests' });
+  Order.hasMany(ReturnRequest, { foreignKey: 'order_id', as: 'returns' });
 };
 
 // Initialize associations
@@ -89,6 +100,7 @@ module.exports = {
   Address,
   CarouselImage,
   Theme,
-  Leads
+  Leads,
+  ReturnRequest
 
 };
