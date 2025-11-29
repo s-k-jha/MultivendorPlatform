@@ -5,11 +5,13 @@ const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');  //gradedown express version for using this 
 const path = require('path');
+const bodyParser = require('body-parser');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
 
 // Import routes
+const paymentRoutes = require('../src/routes/cashfreeRoutes');
 const authRoutes = require('../src/routes/auth')
 const productRoutes = require('../src/routes/products');
 const orderRoutes = require('../src/routes/orders');
@@ -26,6 +28,15 @@ const analyticsRoutes = require('./routes/analyticsRoutes');
 
 
 const app = express();
+
+// Raw body parser for Cashfree webhook
+// Mounting a middleware specifically for webhook path so other routes still use express.json()
+app.post('/api/payment/webhook', bodyParser.raw({ type: '*/*' }), (req, res, next) => {
+  // Attach raw body string for controller to verify signature
+  req.rawBody = req.body.toString();
+  // Forward to the route handler defined in our router (which expects raw body)
+  next();
+});
 
 // Security middleware
 
@@ -97,6 +108,8 @@ app.use('/api/leads', leadsRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/returns', returnRoutes);
 app.use('/api/analytics', analyticsRoutes);
+// Payment routes (Cashfree)
+app.use('/api/payment', paymentRoutes);
 
 
 // Health check
