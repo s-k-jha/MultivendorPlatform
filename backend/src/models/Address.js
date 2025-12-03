@@ -84,9 +84,18 @@ const Address = sequelize.define('Address', {
   is_default: {
     type: DataTypes.BOOLEAN,
     defaultValue: false
+  },
+   is_active: { 
+    type: DataTypes.BOOLEAN, 
+    defaultValue: true 
+  },
+  },  
+  {
+    tableName: 'addresses',
+    paranoid: true,         
+    deletedAt: 'deleted_at', 
+    timestamps: true       
   }
-}, {
-  tableName: 'addresses'
-});
+);
 
 module.exports = Address;
