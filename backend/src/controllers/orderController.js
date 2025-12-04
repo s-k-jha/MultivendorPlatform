@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const redis = require('../utils/redis.js');
 const { QueryTypes } = require('sequelize');
 const cashfreeController = require('./cashfreeController'); 
+const crypto = require("crypto");
 
 
 
@@ -15,16 +16,227 @@ const cashfreeController = require('./cashfreeController');
 //   const random = Math.floor(1000 + Math.random() * 9000);
 //   return `ORD-${timestamp}-${random}`;
 // };
-const generateOrderNumber = () => {
-  return `ORD-${uuidv4()}`;
-};
+// const generateOrderNumber = () => {
+//   return `ORD-${uuidv4()}`;
+// };
+// let counter = 0;
+function generateOrderNumber() {
+  const now = new Date();
+  const ts = now.getFullYear().toString().padStart(4,'0') +
+             String(now.getMonth() + 1).padStart(2,'0') +
+             String(now.getDate()).padStart(2,'0') +
+             String(now.getHours()).padStart(2,'0') +
+             String(now.getMinutes()).padStart(2,'0') +
+             String(now.getSeconds()).padStart(2,'0');
+  const shortUuid = uuidv4().split('-')[0];
 
-const order_number = generateOrderNumber();
+  return `ORD-${ts}-${shortUuid}`;
+}
 
+// console.log(generateOrderNumber());
+
+
+// const order_number = generateOrderNumber();
+
+// Create new order
+// const createOrder = async (req, res) => {
+//   const transaction = await sequelize.transaction();
+  
+//   try {
+//     const { items, shipping_address_id, payment_method, notes } = req.body;
+//     const buyer_id = req.user.id;
+//     // Debug logs
+//     console.log('Order payload:', req.body);
+//     console.log('Checking address:', shipping_address_id, 'for user:', buyer_id);
+
+//     // Verify shipping address belongs to user
+//     const shippingAddress = await Address.findOne({
+//       where: { id: shipping_address_id, user_id: buyer_id }
+//     });
+//     console.log('shippingaddress is ', shippingAddress);
+
+//     if (!shippingAddress) {
+//       await transaction.rollback();
+//       return res.status(400).json({
+//         success: false,
+//         message: 'Invalid shipping address'
+//       });
+//     }
+
+//     let subtotal = 0;
+//     const orderItems = [];
+
+//     // Validate and calculate order total
+//     for (const item of items) {
+//       const product = await Product.findByPk(item.product_id, {
+//         include: [{
+//           model: ProductVariant,
+//           as: 'variants',
+//           where: item.variant_id ? { id: item.variant_id } : undefined,
+//           required: false
+//         }]
+//       });
+
+//       if (!product || product.status !== 'active') {
+//         await transaction.rollback();
+//         return res.status(400).json({
+//           success: false,
+//           message: `Product ${item.product_id} is not available`
+//         });
+//       }
+
+//       let variant = null;
+//       let availableStock = product.stock_quantity;
+//       let unitPrice = parseFloat(product.discount_price || product.price);
+
+//       if (item.variant_id) {
+//         variant = product.variants.find(v => v.id === item.variant_id);
+//         if (!variant || !variant.is_active) {
+//           await transaction.rollback();
+//           return res.status(400).json({
+//             success: false,
+//             message: `Product variant ${item.variant_id} is not available`
+//           });
+//         }
+//         availableStock = variant.stock_quantity;
+//         unitPrice += parseFloat(variant.price_adjustment || 0);
+//       }
+
+//       if (availableStock < item.quantity) {
+//         await transaction.rollback();
+//         return res.status(400).json({
+//           success: false,
+//           message: `Insufficient stock for ${product.name}. Available: ${availableStock}`
+//         });
+//       }
+
+//       const totalPrice = unitPrice * item.quantity;
+//       subtotal += totalPrice;
+
+//       orderItems.push({
+//         product_id: item.product_id,
+//         variant_id: item.variant_id,
+//         quantity: item.quantity,
+//         unit_price: unitPrice,
+//         total_price: totalPrice,
+//         product_name: product.name,
+//         product_sku: variant ? variant.sku : product.sku,
+//         variant_details: variant ? {
+//           size: variant.size,
+//           color: variant.color,
+//           color_code: variant.color_code
+//         } : null
+//       });
+//     }
+
+//     // Calculate totals
+//     const tax_amount = subtotal * 0.18; // 18% GST
+//     const shipping_amount = subtotal > 500 ? 0 : 50; // Free shipping above ₹500
+//     const total_amount = subtotal + tax_amount + shipping_amount;
+
+//     // Create order
+//     const order = await Order.create({
+//       order_number,
+//       buyer_id,
+//       shipping_address_id,
+//       status: ORDER_STATUS.PENDING,
+//       subtotal,
+//       tax_amount,
+//       shipping_amount,
+//       total_amount,
+//       payment_method,
+//       payment_status: payment_method === 'cod' ? 'pending' : 'pending',
+//       notes
+//     }, { transaction });
+
+//     // Create order items and update stock
+//     for (const itemData of orderItems) {
+//       await OrderItem.create({
+//         order_id: order.id,
+//         ...itemData
+//       }, { transaction });
+
+//       // Update stock
+//       if (itemData.variant_id) {
+//         await ProductVariant.decrement('stock_quantity', {
+//           by: itemData.quantity,
+//           where: { id: itemData.variant_id },
+//           transaction
+//         });
+//       } else {
+//         await Product.decrement('stock_quantity', {
+//           by: itemData.quantity,
+//           where: { id: itemData.product_id },
+//           transaction
+//         });
+//       }
+
+//       // Update product sales count
+//       await Product.increment('total_sales', {
+//         by: itemData.quantity,
+//         where: { id: itemData.product_id },
+//         transaction
+//       });
+//     }
+
+//     // Clear user's cart
+//     const userCart = await Cart.findOne({ where: { user_id: buyer_id } });
+//     if (userCart) {
+//       await CartItem.destroy({
+//         where: { cart_id: userCart.id },
+//         transaction
+//       });
+//       await userCart.update({
+//         total_items: 0,
+//         total_amount: 0
+//       }, { transaction });
+//     }
+
+//     await transaction.commit();
+
+//     // Fetch complete order details
+//     const completeOrder = await Order.findByPk(order.id, {
+//       include: [
+//         {
+//           model: OrderItem,
+//           as: 'items',
+//           include: [{
+//             model: Product,
+//             as: 'product',
+//             attributes: ['id', 'name', 'brand']
+//           }]
+//         },
+//         {
+//           model: Address,
+//           as: 'shippingAddress'
+//         },
+//         {
+//           model: User,
+//           as: 'buyer',
+//           attributes: ['id', 'first_name', 'last_name', 'email']
+//         }
+//       ]
+//     });
+
+//     res.status(201).json({
+//       success: true,
+//       message: 'Order created successfully',
+//       data: { order: completeOrder }
+//     });
+//   } catch (error) {
+//     await transaction.rollback();
+//     console.error('Create order error:', error);
+//     res.status(500).json({
+//       success: false,
+//       message: 'Failed to create order',
+//       error: process.env.NODE_ENV === 'development' ? error.message : undefined
+//     });
+//   }
+// };
 // Create new order
 const createOrder = async (req, res) => {
   const transaction = await sequelize.transaction();
-  
+
   try {
     const { items, shipping_address_id, payment_method, notes } = req.body;
     const buyer_id = req.user.id;
@@ -117,20 +329,57 @@ const createOrder = async (req, res) => {
     const shipping_amount = subtotal > 500 ? 0 : 50; // Free shipping above ₹500
     const total_amount = subtotal + tax_amount + shipping_amount;
 
-    // Create order
-    const order = await Order.create({
-      order_number,
-      buyer_id,
-      shipping_address_id,
-      status: ORDER_STATUS.PENDING,
-      subtotal,
-      tax_amount,
-      shipping_amount,
-      total_amount,
-      payment_method,
-      payment_status: payment_method === 'cod' ? 'pending' : 'pending',
-      notes
-    }, { transaction });
+    // --- Create order (robust: generate per-attempt and retry on order_number collision) ---
+    const MAX_ORDER_ATTEMPTS = 5;
+    let order = null;
+    let attempt = 0;
+
+    while (attempt < MAX_ORDER_ATTEMPTS) {
+      attempt++;
+      const order_number = generateOrderNumber();
+
+      try {
+        order = await Order.create({
+          order_number,
+          buyer_id,
+          shipping_address_id,
+          status: ORDER_STATUS.PENDING,
+          subtotal,
+          tax_amount,
+          shipping_amount,
+          total_amount,
+          payment_method,
+          payment_status: payment_method === 'cod' ? 'pending' : 'pending',
+          notes
+        }, { transaction });
+
+        // success -> break loop
+        break;
+      } catch (err) {
+        // If unique constraint error on order_number, retry with a new number
+        if (err.name === 'SequelizeUniqueConstraintError' &&
+            err.fields && err.fields.order_number) {
+          console.warn(`order_number collision on attempt ${attempt}, regenerating...`);
+          if (attempt >= MAX_ORDER_ATTEMPTS) {
+            // Give up after MAX attempts
+            throw new Error('Failed to generate unique order_number after several attempts');
+          }
+          // otherwise continue loop to generate a new order_number
+          continue;
+        }
+        // Other errors -> rethrow so the outer catch handles rollback
+        throw err;
+      }
+    }
+
+    // If order still null for some reason, fail
+    if (!order) {
+      await transaction.rollback();
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to create order'
+      });
+    }
 
     // Create order items and update stock
     for (const itemData of orderItems) {
@@ -216,6 +465,7 @@ const createOrder = async (req, res) => {
     });
   }
 };
+
 
 // Get user's orders
 const getUserOrders = async (req, res) => {
