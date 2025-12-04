@@ -1,5 +1,6 @@
 const { Address } = require('../models');
 const { Op } = require('sequelize');
+const { sequelize } = require('../models');
 
 // Get user's addresses
 const getAddresses = async (req, res) => {
