@@ -5,19 +5,38 @@ const morgan = require('morgan');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');  //gradedown express version for using this 
 const path = require('path');
+const bodyParser = require('body-parser');
 
 // Import middleware
 const errorHandler = require('./middleware/errorHandler');
 
 // Import routes
+const paymentRoutes = require('../src/routes/cashfreeRoutes');
 const authRoutes = require('../src/routes/auth')
 const productRoutes = require('../src/routes/products');
 const orderRoutes = require('../src/routes/orders');
 const cartRoutes = require('../src/routes/cart');
 const addressRoutes = require('../src/routes/addresses');
 const categoryRoutes = require('../src/routes/categories');
+const carouselRoutes = require('../src/routes/carouselRoutes');
+const themeRoutes = require('../src/routes/themes')
+const sellerRoutes = require('../src/routes/seller')
+const leadsRoutes = require('../src/routes/leads');
+const adminRoutes = require('./routes/admin');
+const returnRoutes = require('./routes/returnRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
+
 
 const app = express();
+
+// Raw body parser for Cashfree webhook
+// Mounting a middleware specifically for webhook path so other routes still use express.json()
+app.post('/api/payment/webhook', bodyParser.raw({ type: '*/*' }), (req, res, next) => {
+  // Attach raw body string for controller to verify signature
+  req.rawBody = req.body.toString();
+  // Forward to the route handler defined in our router (which expects raw body)
+  next();
+});
 
 // Security middleware
 
@@ -26,21 +45,30 @@ const app = express();
 //   origin: process.env.CLIENT_URL || 'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com',
 //   credentials: true
 // }));
-const whitelist = [
-  'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com', //  deployed frontend (on deepnote host cloud)
-  'http://localhost:3000' // development frontend 
-];
+// const whitelist = [
+//   'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com', //  deployed frontend (on deepnote host cloud)
+//   'http://localhost:3000' // development frontend 
+// ];
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (whitelist.indexOf(origin) !== -1 || !origin) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  optionsSuccessStatus: 200
-};
+// const corsOptions = {
+//   origin: function (origin, callback) {
+//     if (whitelist.indexOf(origin) !== -1 || !origin) {
+//       callback(null, true);
+//     } else {
+//       callback(new Error('Not allowed by CORS'));
+//     }
+//   },
+//   optionsSuccessStatus: 200
+// };
+// app.use(cors({
+//   origin: [
+//     process.env.CLIENT_URL || 'http://localhost:3000',
+//     // 'https://275f54ec-b195-4742-86ce-733a3c92c235.deepnoteproject.com'
+//   ],
+//   credentials: true
+// }));
+
+app.use(cors());
 
 
 
@@ -73,6 +101,17 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api/addresses', addressRoutes);
 app.use('/api/categories', categoryRoutes);
+app.use('/api/carousels', carouselRoutes);
+app.use('/api/themes', themeRoutes);
+app.use('/api/seller', sellerRoutes);
+app.use('/api/leads', leadsRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/returns', returnRoutes);
+app.use('/api/analytics', analyticsRoutes);
+// Payment routes (Cashfree)
+app.use('/api/payment', paymentRoutes);
+
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({

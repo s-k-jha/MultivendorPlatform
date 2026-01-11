@@ -97,7 +97,19 @@ const Order = sequelize.define('Order', {
   tracking_number: {
     type: DataTypes.STRING(100),
     allowNull: true
-  }
+  },
+  payment_link_id: {
+  type: DataTypes.STRING,
+  allowNull: true
+},
+  payment_link_url: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  payment_metadata: {
+    type: DataTypes.JSON,
+    allowNull: true
+  },
 }, {
   tableName: 'orders',
   hooks: {
