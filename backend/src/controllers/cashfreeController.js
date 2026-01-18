@@ -189,72 +189,196 @@ exports.getLinkDetails = async (req, res) => {
  * Webhook handler: Cashfree posts events here
  * Note: This route must use raw body (see app.js)
  */
+// exports.webhookHandler = async (req, res) => {
+//   try {
+//     // rawBody must be attached by middleware in app.js (we'll set that)
+//     const rawBody = req.rawBody || (req.body && typeof req.body === 'string' ? req.body : JSON.stringify(req.body));
+//     const signature = req.headers['x-webhook-signature'] || req.headers['x-cf-signature'] || req.headers['x-signature'] || '';
+//     const timestamp = req.headers['x-webhook-timestamp'] || req.headers['x-cf-timestamp'] || '';
+
+//     if (!signature) {
+//       console.warn('Webhook: missing signature');
+//       return res.status(400).send('missing signature');
+//     }
+
+//     const webhookSecret = process.env.CASHFREE_WEBHOOK_SECRET || process.env.CASHFREE_CLIENT_SECRET;
+//     const dataToSign = timestamp + rawBody;
+//     const expected = crypto.createHmac('sha256', webhookSecret).update(dataToSign).digest('base64');
+
+//     if (expected !== signature) {
+//       console.warn('Webhook: invalid signature');
+//       return res.status(400).send('invalid signature');
+//     }
+
+//     // Parse payload
+//     const payload = JSON.parse(rawBody);
+//     console.log('Cashfree webhook payload:', payload);
+
+//     // --- Example handling (adapt to real payload shape) ---
+//     // If payload contains payment/link id and status, update order accordingly.
+//     // Check what your webhook payload contains by inspecting logs.
+//     // Typical keys could be: payload.event, payload.link, payload.payment
+//     // Example: event = 'payment_link.paid' or payload.payment_status === 'PAID'
+
+//     try {
+//       const event = payload.event || payload.type || '';
+//       // Attempt to get link id and status from payload
+//       const linkId = payload.link?.id || payload.data?.link_id || payload.payment?.link_id || payload.link_id || payload.data?.link?.link_id;
+//       const paymentStatus = payload.payment?.status || payload.data?.status || payload.data?.payment_status || payload.status || (payload.link && payload.link.status);
+
+//       if (linkId) {
+//         // find order by payment_link_id
+//         const order = await Order.findOne({ where: { payment_link_id: linkId } });
+//         if (order) {
+//           // Map some possible status values to your DB
+//           if (String(paymentStatus).toUpperCase() === 'PAID' || String(paymentStatus).toUpperCase() === 'SUCCESS' || event.includes('paid')) {
+//             await order.update({ payment_status: 'paid' });
+//             console.log('Order marked paid:', order.id);
+//           } else if (String(paymentStatus).toUpperCase() === 'EXPIRED' || event.includes('expired')) {
+//             await order.update({ payment_status: 'expired' });
+//           } else if (String(paymentStatus).toUpperCase() === 'FAILED' || event.includes('failed')) {
+//             await order.update({ payment_status: 'failed' });
+//           } else {
+//             // unknown; save raw payload to metadata field if you have one
+//             await order.update({ payment_status: paymentStatus || 'updated' });
+//           }
+//         } else {
+//           console.warn('Webhook: order not found for linkId', linkId);
+//         }
+//       } else {
+//         console.warn('Webhook: no linkId in payload; payload logged for review.');
+//       }
+//     } catch (dbErr) {
+//       console.error('Webhook DB handling error', dbErr);
+//     }
+
+//     return res.status(200).send('OK');
+//   } catch (err) {
+//     console.error('webhookHandler error', err);
+//     return res.status(500).send('error');
+//   }
+// };
+
 exports.webhookHandler = async (req, res) => {
   try {
-    // rawBody must be attached by middleware in app.js (we'll set that)
-    const rawBody = req.rawBody || (req.body && typeof req.body === 'string' ? req.body : JSON.stringify(req.body));
-    const signature = req.headers['x-webhook-signature'] || req.headers['x-cf-signature'] || req.headers['x-signature'] || '';
-    const timestamp = req.headers['x-webhook-timestamp'] || req.headers['x-cf-timestamp'] || '';
+    /**
+     * 1. Read raw body (required for signature verification)
+     */
+    const rawBody =
+      req.rawBody ||
+      (typeof req.body === 'string'
+        ? req.body
+        : JSON.stringify(req.body || {}));
 
-    if (!signature) {
-      console.warn('Webhook: missing signature');
+    /**
+     * 2. Read signature + timestamp headers (Cashfree sends these)
+     */
+    const signature =
+      req.headers['x-webhook-signature'] ||
+      req.headers['x-cf-signature'] ||
+      req.headers['x-signature'];
+
+    const timestamp =
+      req.headers['x-webhook-timestamp'] ||
+      req.headers['x-cf-timestamp'];
+
+    if (!signature || !timestamp) {
+      console.warn('Cashfree webhook: missing signature or timestamp');
       return res.status(400).send('missing signature');
     }
 
-    const webhookSecret = process.env.CASHFREE_WEBHOOK_SECRET || process.env.CASHFREE_CLIENT_SECRET;
-    const dataToSign = timestamp + rawBody;
-    const expected = crypto.createHmac('sha256', webhookSecret).update(dataToSign).digest('base64');
+    /**
+     * 3. Verify signature
+     */
+    const secret = process.env.CASHFREE_WEBHOOK_SECRET;
+    if (!secret) {
+      console.error('Webhook secret not configured');
+      return res.status(500).send('server error');
+    }
 
-    if (expected !== signature) {
-      console.warn('Webhook: invalid signature');
+    const signedPayload = timestamp + rawBody;
+    const expectedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(signedPayload)
+      .digest('base64');
+
+    if (expectedSignature !== signature) {
+      console.warn('Cashfree webhook: invalid signature');
       return res.status(400).send('invalid signature');
     }
 
-    // Parse payload
+    /**
+     * 4. Parse payload
+     */
     const payload = JSON.parse(rawBody);
     console.log('Cashfree webhook payload:', payload);
 
-    // --- Example handling (adapt to real payload shape) ---
-    // If payload contains payment/link id and status, update order accordingly.
-    // Check what your webhook payload contains by inspecting logs.
-    // Typical keys could be: payload.event, payload.link, payload.payment
-    // Example: event = 'payment_link.paid' or payload.payment_status === 'PAID'
+    /**
+     * 5. Extract event + link_id
+     */
+    const event = payload.event; // e.g. payment_link.paid
 
-    try {
-      const event = payload.event || payload.type || '';
-      // Attempt to get link id and status from payload
-      const linkId = payload.link?.id || payload.data?.link_id || payload.payment?.link_id || payload.link_id || payload.data?.link?.link_id;
-      const paymentStatus = payload.payment?.status || payload.data?.status || payload.data?.payment_status || payload.status || (payload.link && payload.link.status);
+    const linkId =
+      payload.data?.link?.link_id ||
+      payload.data?.link_id ||
+      payload.link_id;
 
-      if (linkId) {
-        // find order by payment_link_id
-        const order = await Order.findOne({ where: { payment_link_id: linkId } });
-        if (order) {
-          // Map some possible status values to your DB
-          if (String(paymentStatus).toUpperCase() === 'PAID' || String(paymentStatus).toUpperCase() === 'SUCCESS' || event.includes('paid')) {
-            await order.update({ payment_status: 'paid' });
-            console.log('Order marked paid:', order.id);
-          } else if (String(paymentStatus).toUpperCase() === 'EXPIRED' || event.includes('expired')) {
-            await order.update({ payment_status: 'expired' });
-          } else if (String(paymentStatus).toUpperCase() === 'FAILED' || event.includes('failed')) {
-            await order.update({ payment_status: 'failed' });
-          } else {
-            // unknown; save raw payload to metadata field if you have one
-            await order.update({ payment_status: paymentStatus || 'updated' });
-          }
-        } else {
-          console.warn('Webhook: order not found for linkId', linkId);
-        }
-      } else {
-        console.warn('Webhook: no linkId in payload; payload logged for review.');
-      }
-    } catch (dbErr) {
-      console.error('Webhook DB handling error', dbErr);
+    if (!linkId) {
+      console.warn('Webhook received without link_id');
+      return res.status(200).send('OK');
     }
 
+    /**
+     * 6. Find order using payment_link_id
+     */
+    const order = await Order.findOne({
+      where: { payment_link_id: linkId }
+    });
+
+    if (!order) {
+      console.warn('Webhook: order not found for link_id', linkId);
+      return res.status(200).send('OK');
+    }
+
+    /**
+     * 7. Update order based on EVENT (SOURCE OF TRUTH)
+     */
+    switch (event) {
+      case 'payment_link.paid': {
+        const paymentId =
+          payload.data?.payment?.payment_id ||
+          payload.data?.payment_id ||
+          null;
+
+        await order.update({
+          payment_status: 'paid',
+          payment_id: paymentId
+        });
+
+        console.log('Order marked PAID:', order.id);
+        break;
+      }
+
+      case 'payment_link.failed':
+        await order.update({ payment_status: 'failed' });
+        console.log('Order marked FAILED:', order.id);
+        break;
+
+      // case 'payment_link.expired':
+      //   await order.update({ payment_status: 'expired' });
+      //   console.log('Order marked EXPIRED:', order.id);
+      //   break;
+
+      default:
+        console.log('Webhook event ignored:', event);
+    }
+
+    /**
+     * 8. Always return 200 (Cashfree retry-safe)
+     */
     return res.status(200).send('OK');
   } catch (err) {
-    console.error('webhookHandler error', err);
+    console.error('webhookHandler fatal error:', err);
     return res.status(500).send('error');
   }
 };
