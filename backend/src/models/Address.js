@@ -22,21 +22,21 @@ const Address = sequelize.define('Address', {
   },
   first_name: {
     type: DataTypes.STRING(50),
-    allowNull: false,
+    allowNull: true,
     validate: {
       notEmpty: true
     }
   },
   last_name: {
     type: DataTypes.STRING(50),
-    allowNull: false,
+    allowNull: true,
     validate: {
       notEmpty: true
     }
   },
   phone: {
     type: DataTypes.STRING(15),
-    allowNull: false,
+    allowNull: true,
     validate: {
       notEmpty: true
     }
