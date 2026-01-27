@@ -25,11 +25,11 @@ const Address = sequelize.define('Address', {
     allowNull: true,
     defaultValue: 'default',
   },
-  last_name: {
-    type: DataTypes.STRING(50),
-    allowNull: true,
-    defaultValue: 'default',
-  },
+  // last_name: {
+  //   type: DataTypes.STRING(50),
+  //   allowNull: true,
+  //   defaultValue: 'default',
+  // },
   phone: {
     type: DataTypes.STRING(15),
     allowNull: true,
