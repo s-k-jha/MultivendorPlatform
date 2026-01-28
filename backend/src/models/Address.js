@@ -21,25 +21,16 @@ const Address = sequelize.define('Address', {
     defaultValue: 'home'
   },
   first_name: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    validate: {
-      notEmpty: true
-    }
+    type: DataTypes.STRING,
+    allowNull: true,
   },
   last_name: {
-    type: DataTypes.STRING(50),
-    allowNull: false,
-    validate: {
-      notEmpty: true
-    }
+    type: DataTypes.STRING,
+    allowNull: true,
   },
   phone: {
-    type: DataTypes.STRING(15),
-    allowNull: false,
-    validate: {
-      notEmpty: true
-    }
+  type: DataTypes.STRING,
+  allowNull: true,
   },
   address_line_1: {
     type: DataTypes.STRING(200),
