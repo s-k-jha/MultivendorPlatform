@@ -244,19 +244,19 @@ const addressValidation = {
       .isIn(['home', 'work', 'other'])
       .withMessage('Address type must be home, work, or other'),
     
-    body('first_name')
-      .trim()
-      .notEmpty()
-      .withMessage('First name is required'),
+    // body('first_name')
+    //   .trim()
+    //   .notEmpty()
+    //   .withMessage('First name is required'),
     
-    body('last_name')
-      .trim()
-      .notEmpty()
-      .withMessage('Last name is required'),
+    // body('last_name')
+    //   .trim()
+    //   .notEmpty()
+    //   .withMessage('Last name is required'),
     
-    body('phone')
-      .isMobilePhone('en-IN')
-      .withMessage('Please provide a valid Indian phone number'),
+    // body('phone')
+    //   .isMobilePhone('en-IN')
+    //   .withMessage('Please provide a valid Indian phone number'),
     
     body('address_line_1')
       .trim()
