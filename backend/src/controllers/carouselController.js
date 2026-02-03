@@ -12,7 +12,7 @@ const createCarouselImage = async (req, res, next) => {
         const uploadResult = await new Promise((resolve, reject) => {
             const uploadStream = cloudinary.uploader.upload_stream(
                 {
-                    folder: "uploads/carousels",
+                    folder: "uploads/production/carousels",
                     resource_type: "auto"
                 },
                 (error, result) => {

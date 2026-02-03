@@ -100,7 +100,7 @@ const createCategory = async (req, res) => {
         const uploadResult = await new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
             {
-              folder: `uploads/categories`,
+              folder: `uploads/production/categories`,
               public_id: `category-${category.id}-${Date.now()}`,
               resource_type: "auto"
             },

@@ -42,7 +42,7 @@ const createTheme = async (req, res) => {
     const uploadPromise = req.files.map((file, index) => {
         return new Promise((resolve, reject) =>{
             const uploadStream = cloudinary.uploader.upload_stream({
-                folder: 'upload/theme',
+                folder: 'upload/production/theme',
                 public_id: `theme-${Date.now()}`,
                 resource_type: "auto"
 
