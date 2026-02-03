@@ -233,7 +233,7 @@ const createProduct = async (req, res) => {
         return new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
             {
-              folder: `uploads/products/${product.id}`, 
+              folder: `uploads/production/products/${product.id}`, 
               public_id: `${product.id}-${Date.now()}-${index}`,
               resource_type: "auto"
             },

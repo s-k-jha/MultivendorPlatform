@@ -100,7 +100,7 @@ const createCategory = async (req, res) => {
         const uploadResult = await new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
             {
-              folder: `uploads/categories`,
+              folder: `uploads/production/categories`,
               public_id: `category-${category.id}-${Date.now()}`,
               resource_type: "auto"
             },
@@ -167,7 +167,7 @@ const updateCategory = async (req, res) => {
             // Extract public_id from Cloudinary URL
             const urlParts = category.image.split('/');
             const fileWithExt = urlParts[urlParts.length - 1];
-            const publicId = `uploads/categories/${fileWithExt.split('.')[0]}`;
+            const publicId = `uploads/production/categories/${fileWithExt.split('.')[0]}`;
             await cloudinary.uploader.destroy(publicId);
           } catch (deleteError) {
             console.error('Failed to delete old image:', deleteError);
@@ -178,7 +178,7 @@ const updateCategory = async (req, res) => {
         const uploadResult = await new Promise((resolve, reject) => {
           const uploadStream = cloudinary.uploader.upload_stream(
             {
-              folder: `uploads/categories`,
+              folder: `uploads/production/categories`,
               public_id: `category-${category.id}-${Date.now()}`,
               resource_type: "auto"
             },
@@ -254,7 +254,7 @@ const deleteCategory = async (req, res) => {
         // Extract public_id from Cloudinary URL
         const urlParts = category.image.split('/');
         const fileWithExt = urlParts[urlParts.length - 1];
-        const publicId = `uploads/categories/${fileWithExt.split('.')[0]}`;
+        const publicId = `uploads/production/categories/${fileWithExt.split('.')[0]}`;
         await cloudinary.uploader.destroy(publicId);
       } catch (cloudinaryError) {
         console.error('Failed to delete image from Cloudinary:', cloudinaryError);
